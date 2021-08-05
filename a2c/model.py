@@ -6,7 +6,7 @@ import stable_baselines3
 import tensorflow as tf
 
 
-class A2C(tf.keras.Model):
+class Model(tf.keras.Model):
     def __init__(self, num_actions: int, num_hidden_units: int = 128) -> None:
         super().__init__()
 
