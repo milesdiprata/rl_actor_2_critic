@@ -59,7 +59,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     args = parse_args()
     if args.day:
         slimevolleygym.setDayColors()
@@ -70,15 +70,14 @@ def main():
     tf.random.set_seed(args.seed)
     np.random.seed(args.seed)
 
-    a2c_model = model.Model(2 ** env.action_space.n if type(env.action_space)
-                            is gym.spaces.MultiBinary else env.action_space.n) if args.train \
-        else tf.keras.models.load_model(A2C_MODEL_FILE_PATH)
     other_model = MODELS[args.other](MODEL_PATHS[args.other])
 
-    algo = algorithm.Algorithm(env, a2c_model, other_model, args.episodes, args.steps)
+    algo = algorithm.Algorithm(env, other_model, args.episodes, args.steps)
     if args.train:
         algo.train()
         algo.save_model(A2C_MODEL_FILE_PATH)
+    else:
+        algo.load_model(A2C_MODEL_FILE_PATH)
     algo.evaluate()
 
 
