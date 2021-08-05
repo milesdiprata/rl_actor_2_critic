@@ -1,4 +1,5 @@
 from typing import Any, List, Tuple
+import time
 
 import gym
 import numpy as np
@@ -40,7 +41,7 @@ class Evaluate:
                                  [tf.float32, tf.int32, tf.int32, tf.float32])
 
     def _get_action(self, action: tf.Tensor) -> tf.Tensor:
-        return tf.constant([int(i) for i in bin(action)[2:].zfill(self.env.action_space.n)]) \
+        return tf.constant([int(i) for i in bin(int(action))[2:].zfill(self.env.action_space.n)]) \
             if type(self.env.action_space) is gym.spaces.MultiBinary else action
 
     # TODO: Build model class for ohter model
@@ -86,9 +87,9 @@ class Evaluate:
             rewards = rewards.write(t, reward)
 
             # TODO: Render
-            # if self.render:
-            #     self.env.render()
-            #     time.sleep(RENDER_SLEEP_TIME)
+            if self.render:
+                self.env.render()
+                time.sleep(Evaluate.RENDER_SLEEP_TIME)
 
             if tf.cast(done, tf.bool):
                 break
@@ -106,14 +107,12 @@ class Evaluate:
 
         rewards = tf.cast(rewards[::-1], tf.float32)
         discounted_sum = tf.constant(0.0)
-        discounted_sum_shape = discounted_sum.shape
 
         # Start from the end of `rewards` and accumulate reward sums into the
         # `returns` array
         for i in tf.range(num_rewards):
             reward = rewards[i]
             discounted_sum = reward + discount_rate * discounted_sum
-            discounted_sum.set_shape(discounted_sum_shape)
             returns = returns.write(i, discounted_sum)
         returns = returns.stack()[::-1]
 
@@ -134,14 +133,16 @@ class Evaluate:
 
         return actor_loss + critic_loss
 
-    @ tf.function
-    def _train_step(self, initial_state: tf.Tensor, discount_rate: float = 0.99):
+    # @ tf.function
+    def _train_step(self, initial_state: tf.Tensor, discount_rate: float) -> tf.Tensor:
         with tf.GradientTape() as tape:
             # Run the model for one episode to collect training data
             action_prs, values, rewards = self._run_episode(initial_state)
 
             # Calculate expected returns
             returns = self._get_expected_return(rewards, discount_rate)
+            print("rewards:", rewards)
+            print("returns:", returns)
 
             # Convert training data to appropriate shape
             action_prs, values, returns = [
@@ -149,6 +150,7 @@ class Evaluate:
 
             # Calculating loss values to update our network
             loss = self._compute_loss(action_prs, values, returns)
+            print("loss:", loss)
 
         # Compute the gradients from the loss
         grads = tape.gradient(loss, self.a2c_model.trainable_variables)
@@ -199,4 +201,4 @@ class Evaluate:
 
     def test(self) -> None:
         initial_state = tf.constant(self.env.reset(), dtype=tf.float32)
-        self._run_episode(initial_state)
+        self._train_step(initial_state, 0.99)
