@@ -1,0 +1,13 @@
+name: rl_actor_2_critic
+channels:
+  - defaults
+dependencies:
+  - pip
+  - python=3.9.6
+  - pip:
+    - gym
+    - mpi4py
+    - stable-baselines
+    - tensorflow
+    - slimevolleygym
+prefix: /home/nle/anaconda3/envs/rl_actor_2_critic
