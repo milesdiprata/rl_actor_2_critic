@@ -4,13 +4,14 @@ import warnings
 import gym
 import numpy as np
 import slimevolleygym
+import mazeworldgym
 import tensorflow as tf
 
 import a2c
 
 GYM_ENV_NAMES = {
     a2c.arguments.Gym.SLIMEVOLLEY: "SlimeVolley-v0",
-    a2c.arguments.Gym.MAZEWORLD: "mazeworld"
+    a2c.arguments.Gym.MAZEWORLD: "Mazeworld-v0"
 }
 
 MODEL_PATH = "models/a2c/{}_model.tf"
@@ -31,15 +32,7 @@ def mazeworld() -> None:
 
 def main() -> None:
     args = a2c.arguments.Arguments()
-    # if args.gym == arguments.Gym.SLIMEVOLLEY:
-    #     slimevolley(args)
-    # elif args.gym == arguments.Gym.MAZEWORLD:
-    #     mazeworld(args)
-    # else:
-    #     raise ValueError("Unknown gym!")
-
     model_path = MODEL_PATH.format(args.gym.name.lower())
-
     if args.day:
         slimevolleygym.setDayColors()
 

@@ -139,7 +139,7 @@ class Algorithm:
         if action_space_type is gym.spaces.MultiBinary:
             return np.array([int(i) for i in bin(action)[2:].zfill(
                 self.env.action_space.n)], dtype=np.int32)
-        elif action_space_type is gym.spaces.MultiBinary:
+        elif action_space_type is gym.spaces.Discrete:
             return np.array(action, dtype=np.int32)
         else:
             raise ValueError("Unknown env action space type!")
@@ -194,8 +194,10 @@ class Algorithm:
             state, reward, done, other_state = self._tf_env_step(action,
                                                                  other_action)
             state.set_shape(initial_state_shape)
-            if other_state:
+            if other_action is not None:
                 other_state.set_shape(initial_state_shape)
+            else:
+                other_state = None
 
             # Store reward
             rewards = rewards.write(t, reward)
@@ -244,7 +246,7 @@ class Algorithm:
 
         return actor_loss + critic_loss
 
-    @ tf.function
+    # @ tf.function
     def _train_step(self, initial_state: tf.Tensor,
                     discount_rate: float) -> tf.Tensor:
         with tf.GradientTape() as tape:
