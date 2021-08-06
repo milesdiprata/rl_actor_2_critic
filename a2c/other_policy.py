@@ -9,7 +9,8 @@ import a2c.arguments as arguments
 
 PATHS = {
     arguments.OtherPolicy.SLIMEVOLLEY_BASELINE: None,
-    arguments.OtherPolicy.SLIMEVOLLEY_CMA: "zoo/cmaes/slimevolley.cma.64.96.best.json",
+    arguments.OtherPolicy.SLIMEVOLLEY_CMA:
+        "zoo/cmaes/slimevolley.cma.64.96.best.json",
     arguments.OtherPolicy.SLIMEVOLLEY_GA: "zoo/ga_sp/ga.json",
     arguments.OtherPolicy.STABLE_BASELINES_PPO: "zoo/ppo/best_model.zip",
     arguments.OtherPolicy.RANDOM: None,
@@ -50,7 +51,8 @@ class SlimevolleyGAPolicy(OtherPolicy):
 class StableBaselinesPPOPolicy(OtherPolicy):
     @ staticmethod
     def _load(path: str) -> Any:
-        raise NotImplementedError("PPO model best_model.zip not compatible with stable-baselines3!")
+        raise NotImplementedError(
+            "PPO model best_model.zip not compatible with stable-baselines3!")
 
     def predict(self, state: np.ndarray) -> np.ndarray:
         action, _state = self.model.predict(state, deterministic=True)
@@ -66,7 +68,8 @@ class RandomPolicy(OtherPolicy):
         return self.action_space.sample()
 
 
-def get(other_policy: arguments.OtherPolicy, action_space: Union[gym.spaces.Discrete, gym.spaces.MultiBinary] = None) -> OtherPolicy:
+def get(other_policy: arguments.OtherPolicy,
+        action_space: Union[gym.spaces.Discrete, gym.spaces.MultiBinary] = None) -> OtherPolicy:
     if other_policy == arguments.OtherPolicy.SLIMEVOLLEY_BASELINE:
         return SlimevolleyBaselinePolicy(PATHS[other_policy])
     elif other_policy == arguments.OtherPolicy.SLIMEVOLLEY_CMA:

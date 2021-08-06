@@ -51,8 +51,8 @@ def main() -> None:
     other_policy = a2c.other_policy.get(args.other_policy,
                                         action_space=env.action_space)
 
-    algo = a2c.algorithm.Algorithm(env, other_policy,
-                                   args.max_episodes, args.max_steps)
+    algo = a2c.algorithm.Algorithm(env, args.max_episodes, args.max_steps,
+                                   other_policy=other_policy)
     if args.train:
         algo.train()
         algo.save_model(model_path)
