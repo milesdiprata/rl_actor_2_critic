@@ -5,6 +5,7 @@ import time
 
 import gym
 import numpy as np
+from slimevolleygym.slimevolley import RENDER_MODE
 import tensorflow as tf
 import tqdm
 
@@ -18,14 +19,14 @@ class Algorithm:
     LEARNING_RATE = 0.01
     DISCOUNT_FACTOR = 0.99
 
-    REWARD_THRESHOLD = 0.4
+    REWARD_THRESHOLD = 2.0
 
     def __init__(self, env: gym.Env, other_model: Any, max_episodes: int, max_steps: int) -> None:
         self.env = env
         self.model = Model(2 ** env.action_space.n if type(env.action_space)
                            is gym.spaces.MultiBinary else env.action_space.n)
         self.other_model = other_model
-        self.huber_loss = tf.keras.losses.Huber(reduction=tf.compat.v2.losses.Reduction.SUM)
+        self.huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
         self.max_steps = max_steps
         self.max_episodes = max_episodes
         self.eps = np.finfo(np.float32).eps.item()
@@ -65,21 +66,43 @@ class Algorithm:
 
         print(f"\nSolved at episode {i}: average reward: {running_reward:.2f}!")
 
-    def evaluate(self) -> None:
-        pass
+    def render_episode(self) -> None:
+        state = tf.constant(self.env.reset(), dtype=tf.float32)
+        other_state = state
+
+        total_reward = 0
+
+        for _i in range(self.max_steps):
+            state = tf.expand_dims(state, 0)
+
+            action_logits, _value = self.model(state)
+            action = np.argmax(np.squeeze(action_logits))
+
+            action = self._get_action(action)
+            other_action = self._get_other_action(other_state)
+
+            state, reward, done, info = self.env.step(action, other_action)
+            state = tf.constant(state, dtype=tf.float32)
+            other_state = tf.constant(info[Algorithm.OTHER_STATE], dtype=tf.float32)
+            total_reward += reward
+
+            self.env.render()
+            time.sleep(Algorithm.RENDER_SLEEP_TIME)
+
+            if done:
+                break
+
+        return total_reward
 
     def _env_step(self, action: np.ndarray, other_action: np.ndarray) -> Tuple[np.ndarray, np.ndarray,
                                                                                np.ndarray, np.ndarray]:
         state, reward, done, info = self.env.step(action, other_action)
-        return (state.astype(np.float32), np.array(reward, dtype=np.int32),
-                np.array(done, dtype=np.int32),
+        return (state.astype(np.float32), np.array(reward, dtype=np.int32), np.array(done, dtype=np.int32),
                 np.array(info[Algorithm.OTHER_STATE], dtype=np.float32))
 
     def _tf_env_step(self, action: tf.Tensor,
                      other_action: tf.Tensor) -> List[tf.Tensor]:
-        return tf.numpy_function(self._env_step,
-                                 [action, other_action],
-                                 [tf.float32, tf.int32, tf.int32, tf.float32])
+        return tf.numpy_function(self._env_step, [action, other_action], [tf.float32, tf.int32, tf.int32, tf.float32])
 
     def _get_action(self, action: np.ndarray) -> np.ndarray:
         return np.array([int(i) for i in bin(action)[2:].zfill(self.env.action_space.n)], dtype=np.int32) \
@@ -112,8 +135,7 @@ class Algorithm:
             action_logits_t, value = self.model(state)
 
             # Sample next action from the action probability distribution
-            action = tf.squeeze(tf.random.categorical(
-                action_logits_t, num_samples=1))
+            action = tf.squeeze(tf.random.categorical(action_logits_t, num_samples=1))
             action_prs_t = tf.nn.softmax(action_logits_t)
 
             # Store log probability of the action chosen
@@ -134,11 +156,6 @@ class Algorithm:
             # Store reward
             rewards = rewards.write(t, reward)
 
-            # TODO: Render
-            # if self.render:
-            #     self.env.render()
-            #     time.sleep(Algorithm.RENDER_SLEEP_TIME)
-
             if tf.cast(done, tf.bool):
                 break
 
@@ -152,12 +169,12 @@ class Algorithm:
         num_rewards = tf.shape(rewards)[0]
         returns = tf.TensorArray(dtype=tf.float32, size=num_rewards)
 
+        # Start from the end of `rewards` and accumulate reward sums into the
+        # `returns` array
         rewards = tf.cast(rewards[::-1], tf.float32)
         discounted_sum = tf.constant(0.0)
         discounted_sum_shape = discounted_sum.shape
 
-        # Start from the end of `rewards` and accumulate reward sums into the
-        # `returns` array
         for i in tf.range(num_rewards):
             reward = rewards[i]
             discounted_sum = reward + discount_rate * discounted_sum
@@ -191,7 +208,7 @@ class Algorithm:
             returns = self._get_expected_return(rewards, discount_rate)
 
             # Convert training data to appropriate shape
-            action_prs, values, returns = [tf.expand_dims(i, axis=1) for i in [action_prs, values, returns]]
+            action_prs, values, returns = [tf.expand_dims(i, 1) for i in [action_prs, values, returns]]
 
             # Calculating loss values to update our network
             loss = self._compute_loss(action_prs, values, returns)

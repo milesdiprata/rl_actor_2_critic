@@ -7,7 +7,7 @@ dependencies:
   - pip:
     - gym
     - mpi4py
-    - stable-baselines3
+    - stable-baselines3[extra]
     - tensorflow
     - slimevolleygym
     - tqdm

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import argparse
-from re import A
 import warnings
 
 import gym
@@ -21,7 +20,7 @@ MODEL_RANDOM = "random"
 
 MODEL_PATHS = {
     MODEL_BASELINE: None,
-    MODEL_PPO: "zoo/ppo/best_model.zip",
+    MODEL_PPO: "models/ppo/best_model.zip",
     MODEL_CMA: "zoo/cmaes/slimevolley.cma.64.96.best.json",
     MODEL_GA: "zoo/ga_sp/ga.json",
     MODEL_RANDOM: None,
@@ -29,13 +28,13 @@ MODEL_PATHS = {
 
 MODELS = {
     MODEL_BASELINE: model.make_baseline_policy,
-    # MODEL_PPO: model.PPO,
+    MODEL_PPO: model.PPOPolicy,
     MODEL_CMA: slimevolleygym.mlp.makeSlimePolicy,
     MODEL_GA: slimevolleygym.mlp.makeSlimePolicyLite,
     MODEL_RANDOM: model.RandomPolicy,
 }
 
-A2C_MODEL_FILE_PATH = "models/model.zip"
+A2C_MODEL_FILE_PATH = "models/a2c/model.tf"
 
 warnings.filterwarnings("ignore", module='tensorflow')
 warnings.filterwarnings("ignore", module='gym')
@@ -54,7 +53,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", help="Random seed (integer).", type=int, default=721)
     parser.add_argument("--episodes", help="Number of episodes (default 10000).",
                         type=int, default=10000)
-    parser.add_argument("--steps", help="Number of training steps (default 1000).", type=int, default=1000)
+    parser.add_argument("--steps", help="Max. number of steps per episode. (default 1000).", type=int, default=1000)
 
     return parser.parse_args()
 
@@ -78,7 +77,9 @@ def main() -> None:
         algo.save_model(A2C_MODEL_FILE_PATH)
     else:
         algo.load_model(A2C_MODEL_FILE_PATH)
-    algo.evaluate()
+    for _i in range(args.episodes):
+        cumulative_score = algo.render_episode()
+        print("Cumulative Score:", cumulative_score)
 
 
 if __name__ == "__main__":

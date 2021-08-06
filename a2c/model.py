@@ -2,7 +2,7 @@ from typing import Tuple
 
 import gym
 import slimevolleygym
-import stable_baselines3
+from stable_baselines3 import PPO
 import tensorflow as tf
 
 
@@ -11,8 +11,7 @@ class Model(tf.keras.Model):
         super().__init__()
 
         # TODO: Hidden layer for values?
-        self.common_hidden = tf.keras.layers.Dense(num_hidden_units,
-                                                   activation="relu")
+        self.common_hidden = tf.keras.layers.Dense(num_hidden_units, activation="relu")
         self.logits = tf.keras.layers.Dense(num_actions)
         self.value = tf.keras.layers.Dense(1)
 
@@ -21,13 +20,13 @@ class Model(tf.keras.Model):
         return self.logits(common_out), self.value(common_out)
 
 
-# class PPO:
-#     def __init__(self, path):
-#         self.model = stable_baselines.PPO1.load(path)
+class PPOPolicy:
+    def __init__(self, path):
+        self.model = PPO.load(path)
 
-#     def predict(self, obs):
-#         action, _state = self.model.predict(obs, deterministic=True)
-#         return action
+    def predict(self, obs):
+        action, _state = self.model.predict(obs, deterministic=True)
+        return action
 
 
 class RandomPolicy:
