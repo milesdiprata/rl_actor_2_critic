@@ -42,7 +42,8 @@ def main() -> None:
     np.random.seed(args.seed)
 
     other_policy = a2c.other_policy.get(args.other_policy,
-                                        action_space=env.action_space)
+                                        action_space=env.action_space) \
+        if args.gym == a2c.arguments.Gym.SLIMEVOLLEY else None
 
     algo = a2c.algorithm.Algorithm(env, args.max_episodes, args.max_steps,
                                    other_policy=other_policy)

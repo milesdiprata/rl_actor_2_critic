@@ -1,6 +1,6 @@
 import collections
 import statistics
-from typing import List, Tuple, Union
+from typing import List, Tuple
 import time
 
 import gym
@@ -77,16 +77,9 @@ class Algorithm:
                 t.set_postfix(episode_reward=episode_reward,
                               running_reward=running_reward)
 
-                # Show average episode reward every 10 episodes
-                if i % 10 == 0:
-                    print(f'Episode {i}: average reward: {running_reward}')
-
                 if running_reward > Algorithm.REWARD_THRESHOLD \
                         and i >= Algorithm.MIN_EPISODE_CRITERION:
                     break
-
-                print(f"\nSolved at episode {i}: average reward: "
-                      + "{running_reward: .2f}!")
 
     def render_episode(self) -> float:
         state = tf.constant(self.env.reset(), dtype=tf.float32)
@@ -98,13 +91,10 @@ class Algorithm:
             state = tf.expand_dims(state, 0)
 
             action_logits, _value = self.model(state)
-            # action = np.argmax(np.squeeze(action_logits))
             action = tf.argmax(tf.squeeze(action_logits))
 
             action = self._tf_get_action(action)
             other_action = self._tf_get_other_action(other_state)
-            print("action:", action)
-            print("other_action:", other_action)
 
             state, reward, done, other_state = self._tf_env_step(action,
                                                                  other_action)
@@ -121,8 +111,7 @@ class Algorithm:
     def _env_step(self, action: np.ndarray,
                   other_action: np.ndarray) -> Tuple[np.ndarray, np.ndarray,
                                                      np.ndarray, np.ndarray]:
-        state, reward, done, info = self.env.step(action, other_action) \
-            if other_action is not None else self.env.step(action)
+        state, reward, done, info = self.env.step(action, other_action)
         return (state.astype(np.float32),
                 np.array(reward, dtype=np.int32),
                 np.array(done, dtype=np.int32),
@@ -135,26 +124,19 @@ class Algorithm:
                                  [tf.float32, tf.int32, tf.int32, tf.float32])
 
     def _get_action(self, action: np.ndarray) -> np.ndarray:
-        action_space_type = type(self.env.action_space)
-        if action_space_type is gym.spaces.MultiBinary:
-            return np.array([int(i) for i in bin(action)[2:].zfill(
-                self.env.action_space.n)], dtype=np.int32)
-        elif action_space_type is gym.spaces.Discrete:
-            return np.array(action, dtype=np.int32)
-        else:
-            raise ValueError("Unknown env action space type!")
+        return np.array([int(i) for i in bin(action)[2:].zfill(
+            self.env.action_space.n)], dtype=np.int32)
 
     def _tf_get_action(self, action: tf.Tensor) -> tf.Tensor:
         return tf.numpy_function(self._get_action, [action], tf.int32)
 
     # TODO: Build model class for other model
     def _get_other_action(self, other_state: np.ndarray) -> np.ndarray:
-        return np.array(self.other_policy.predict(other_state))
+        return np.array(self.other_policy.predict(other_state), dtype=np.int32)
 
     def _tf_get_other_action(self, other_state: tf.Tensor) -> tf.Tensor:
         return tf.numpy_function(self._get_other_action,
-                                 [other_state], tf.int32) \
-            if other_state is not None else None
+                                 [other_state], tf.int32)
 
     def _run_episode(self, initial_state: tf.Tensor) -> Tuple[tf.Tensor,
                                                               tf.Tensor,
@@ -166,7 +148,7 @@ class Algorithm:
 
         initial_state_shape = initial_state.shape
         state = initial_state
-        other_state = initial_state if self.other_policy is not None else None
+        other_state = initial_state
 
         for t in tf.range(self.max_steps):
             # Convert state into a batched ndarray (batch size = 1)
@@ -194,10 +176,7 @@ class Algorithm:
             state, reward, done, other_state = self._tf_env_step(action,
                                                                  other_action)
             state.set_shape(initial_state_shape)
-            if other_action is not None:
-                other_state.set_shape(initial_state_shape)
-            else:
-                other_state = None
+            other_state.set_shape(initial_state_shape)
 
             # Store reward
             rewards = rewards.write(t, reward)
@@ -246,7 +225,7 @@ class Algorithm:
 
         return actor_loss + critic_loss
 
-    # @ tf.function
+    @ tf.function
     def _train_step(self, initial_state: tf.Tensor,
                     discount_rate: float) -> tf.Tensor:
         with tf.GradientTape() as tape:
