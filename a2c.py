@@ -54,10 +54,9 @@ def main() -> None:
         algo.save_model(model_path)
     else:
         algo.load_model(model_path)
-
-    for _i in range(args.max_episodes):
-        cumulative_score = algo.render_episode()
-        print("Cumulative Score:", cumulative_score)
+        for _i in range(args.max_episodes):
+            cumulative_score = algo.render_episode()
+            print("Cumulative Score:", cumulative_score)
 
 
 if __name__ == "__main__":
