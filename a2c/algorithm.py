@@ -162,7 +162,7 @@ class Algorithm(ABC):
 
 
 class Slimevolley(Algorithm):
-    RENDER_SLEEP_TIME = 0.01
+    RENDER_SLEEP_TIME = 0.2
     OTHER_STATE = "otherObs"
 
     def __init__(self, env: gym.Env, max_episodes: int,
@@ -282,7 +282,7 @@ class Slimevolley(Algorithm):
 
 
 class Mazeworld(Algorithm):
-    RENDER_SLEEP_TIME = 0.01
+    RENDER_SLEEP_TIME = 0.5
 
     def __init__(self, env: gym.Env,
                  max_episodes: int, max_steps: int) -> None:
@@ -290,7 +290,7 @@ class Mazeworld(Algorithm):
                          max_episodes, max_steps)
 
     def render_episode(self) -> float:
-        state = tf.constant(self.env.reset(), dtype=tf.float32)
+        state = tf.constant(self.env.reset(), dtype=tf.int32)
         total_reward = 0
 
         for _i in range(self.max_steps):
@@ -298,6 +298,8 @@ class Mazeworld(Algorithm):
 
             action_logits, _value = self.model(state)
             action = tf.argmax(tf.squeeze(action_logits))
+
+            action = np.random.random_integers(0, 4)
 
             state, reward, done = self._tf_env_step(action)
             total_reward += reward
@@ -313,14 +315,14 @@ class Mazeworld(Algorithm):
     def _env_step(self, action: np.ndarray) -> Tuple[np.ndarray, np.ndarray,
                                                      np.ndarray, np.ndarray]:
         state, reward, done = self.env.step(action)
-        return (state.astype(np.float32),
-                np.array(reward, dtype=np.int32),
+        return (state.astype(np.int32),
+                np.array(reward, dtype=np.float32),
                 np.array(done, dtype=np.int32))
 
     def _tf_env_step(self, action: tf.Tensor) -> List[tf.Tensor]:
         return tf.numpy_function(self._env_step,
                                  [action],
-                                 [tf.float32, tf.int32, tf.int32])
+                                 [tf.int32, tf.float32, tf.int32])
 
     def _run_episode(self, initial_state: tf.Tensor) -> Tuple[tf.Tensor,
                                                               tf.Tensor,
@@ -328,10 +330,10 @@ class Mazeworld(Algorithm):
         action_prs = tf.TensorArray(dtype=tf.float32, size=0,
                                     dynamic_size=True)
         values = tf.TensorArray(dtype=tf.float32, size=0, dynamic_size=True)
-        rewards = tf.TensorArray(dtype=tf.int32, size=0, dynamic_size=True)
+        rewards = tf.TensorArray(dtype=tf.float32, size=0, dynamic_size=True)
 
         initial_state_shape = initial_state.shape
-        state = initial_state
+        state = tf.cast(initial_state, tf.int32)
 
         for t in tf.range(self.max_steps):
             # Convert state into a batched ndarray (batch size = 1)

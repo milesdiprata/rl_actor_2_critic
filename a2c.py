@@ -21,10 +21,12 @@ MODEL_PATH = "models/a2c/{}_model.tf"
 warnings.filterwarnings("ignore", module="tensorflow")
 warnings.filterwarnings("ignore", module="gym")
 
-np.set_printoptions(threshold=20, precision=4, suppress=True, linewidth=200)
+# np.set_printoptions(threshold=20, precision=4, suppress=True, linewidth=200)
+np.set_printoptions(threshold=np.inf)
 
 
 def main() -> None:
+
     args = a2c.arguments.Arguments()
     model_path = MODEL_PATH.format(args.gym.name.lower())
 
@@ -52,6 +54,7 @@ def main() -> None:
         algo.save_model(model_path)
     else:
         algo.load_model(model_path)
+
     for _i in range(args.max_episodes):
         cumulative_score = algo.render_episode()
         print("Cumulative Score:", cumulative_score)

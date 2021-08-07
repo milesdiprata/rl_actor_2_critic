@@ -11,4 +11,5 @@ dependencies:
     - tensorflow
     - slimevolleygym
     - tqdm
+    - prettytable
 prefix: /home/nle/anaconda3/envs/rl_actor_2_critic
