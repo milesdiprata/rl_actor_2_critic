@@ -187,12 +187,10 @@ class MazeworldEnv(gym.Env):
                                                 shape=(4,))
         self.reward_range = (-10, 1)
 
-    def step(self, action: int,
-             other_action: int = None) -> Tuple[np.ndarray, float,
-                                                bool, Dict[str, Any]]:
+    def step(self, action: int) -> Tuple[np.ndarray, float,
+                                         bool, Dict[str, Any]]:
         state, reward, done = self.maze.step(action)
-        info = {MazeworldEnv.OTHER_STATE: state}
-        return np.array(state), reward, done, info
+        return np.array(state), reward, done
 
     def reset(self) -> np.ndarray:
         return self.maze.reset()
