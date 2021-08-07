@@ -108,7 +108,8 @@ class MazeworldEnv(gym.Env):
         return self.maze.reset()
 
     def render(self) -> None:
-        os.system("cls" if os.name == "nt" else "clear")
+        # os.system("cls" if os.name == "nt" else "clear")
+        print("\n" * 150)
         table = PrettyTable()
         for row in self.maze.grid:
             table.add_row(row)

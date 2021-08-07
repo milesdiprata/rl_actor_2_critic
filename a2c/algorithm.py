@@ -282,7 +282,7 @@ class Slimevolley(Algorithm):
 
 
 class Mazeworld(Algorithm):
-    RENDER_SLEEP_TIME = 0.5
+    RENDER_SLEEP_TIME = 0.2
 
     def __init__(self, env: gym.Env,
                  max_episodes: int, max_steps: int) -> None:
@@ -298,8 +298,6 @@ class Mazeworld(Algorithm):
 
             action_logits, _value = self.model(state)
             action = tf.argmax(tf.squeeze(action_logits))
-
-            action = np.random.random_integers(0, 4)
 
             state, reward, done = self._tf_env_step(action)
             total_reward += reward
