@@ -1,4 +1,3 @@
-import os
 from enum import Enum
 from typing import List, Tuple
 
@@ -7,8 +6,8 @@ import gym
 import numpy as np
 
 
-MAZE_H = 10  # height of the entire grid in cells
-MAZE_W = 10  # width of the entire grid in cells
+MAZE_HEIGHT = 10
+MAZE_WIDTH = 10
 
 
 class Maze:
@@ -72,7 +71,8 @@ class MazeworldEnv(gym.Env):
                       [2, 8], [3, 8], [4, 8], [5, 8]])
     PITS = np.array([[6, 3], [1, 4]])
 
-    def __init__(self, width: int = MAZE_W, height: int = MAZE_H) -> None:
+    def __init__(self, width: int = MAZE_WIDTH,
+                 height: int = MAZE_HEIGHT) -> None:
         self.maze = Maze(width, height, MazeworldEnv.AGENT_START,
                          MazeworldEnv.GOAL, MazeworldEnv.WALLS,
                          MazeworldEnv.PITS)
@@ -108,14 +108,13 @@ class MazeworldEnv(gym.Env):
         return self.maze.reset()
 
     def render(self) -> None:
-        # os.system("cls" if os.name == "nt" else "clear")
         print("\n" * 150)
         table = PrettyTable()
         for row in self.maze.grid:
             table.add_row(row)
         print(table.get_string(header=False, hrules=ALL))
 
-    def seed(self, seed=None) -> None:
+    def seed(self, seed: int = None) -> None:
         pass
 
     def _get_reward(self, next_state: np.ndarray) -> Tuple[float, bool]:
@@ -137,3 +136,28 @@ class MazeworldEnv(gym.Env):
 
 gym.register(id="Mazeworld-v0",
              entry_point="mazeworldgym.mazeworld:MazeworldEnv")
+
+
+def main() -> None:
+    env = MazeworldEnv()
+    while 1:
+        running_reward = 0
+        state = env.reset()
+        while 1:
+            action = np.random.randint(0, 4)
+            next_state, reward, done = env.step(action)
+            running_reward += reward
+            env.render()
+            print("state:", state)
+            print("action:", MazeworldEnv.Action(action))
+            print("reward:", reward)
+            print("next_state:", next_state)
+            print("done:", done)
+            print("running reward:", running_reward)
+            if done:
+                break
+            input("Press Enter to continue...")
+
+
+if __name__ == "__main__":
+    main()
