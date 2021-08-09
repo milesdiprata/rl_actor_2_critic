@@ -1,8 +1,9 @@
-from abc import ABC, abstractmethod
 import collections
+import csv
 import statistics
-from typing import List, Tuple
 import time
+from abc import ABC, abstractmethod
+from typing import List, Tuple
 
 import gym
 import numpy as np
@@ -31,7 +32,6 @@ class Algorithm(ABC):
     LEARNING_RATE = 0.01
     DISCOUNT_FACTOR = 0.99
 
-    REWARD_THRESHOLD = 4.5
     MIN_EPISODE_CRITERION = 100
 
     def __init__(self, env: gym.Env, model: tf.keras.Model,
@@ -52,29 +52,40 @@ class Algorithm(ABC):
     def save_model(self, file_path: str) -> None:
         self.model.save(file_path)
 
-    def train(self) -> None:
-        running_reward = 0
+    def evaluate(self) -> None:
+        for _i in range(self.max_episodes):
+            cumulative_score = self.evaluate_step()
+            print("Cumulative Score:", cumulative_score)
 
-        # Keep last episodes reward
-        episodes_reward = collections.deque(
-            maxlen=Algorithm.MIN_EPISODE_CRITERION)
+    def train(self, results_csv_name: str) -> None:
+        with open(results_csv_name, "w", newline="") as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(
+                ["Episode", "Episode Reward", "Running Reward"])
 
-        with tqdm.trange(self.max_episodes) as t:
-            for i in t:
-                initial_state = tf.constant(self.env.reset(), dtype=tf.float32)
-                episode_reward = int(self._train_step(
-                    initial_state, Algorithm.DISCOUNT_FACTOR))
+            running_reward = 0
 
-                episodes_reward.append(episode_reward)
-                running_reward = statistics.mean(episodes_reward)
+            # Keep last episodes reward
+            episodes_reward = collections.deque(
+                maxlen=Algorithm.MIN_EPISODE_CRITERION)
 
-                t.set_description(f"Episode {i}")
-                t.set_postfix(episode_reward=episode_reward,
-                              running_reward=running_reward)
+            with tqdm.trange(self.max_episodes) as t:
+                for i in t:
+                    initial_state = tf.constant(self.env.reset(),
+                                                dtype=tf.float32)
+                    episode_reward = int(self._train_step(
+                        initial_state, Algorithm.DISCOUNT_FACTOR))
 
-                if running_reward > Algorithm.REWARD_THRESHOLD \
-                        and i >= Algorithm.MIN_EPISODE_CRITERION:
-                    break
+                    episodes_reward.append(episode_reward)
+                    running_reward = statistics.mean(episodes_reward)
+
+                    t.set_description(f"Episode {i}")
+                    t.set_postfix(episode_reward=episode_reward,
+                                  running_reward=running_reward)
+
+                    csv_writer.writerow([i, episode_reward, running_reward])
+
+            csv_file.close()
 
     @abstractmethod
     def render_episode(self) -> float:
@@ -143,8 +154,8 @@ class Algorithm(ABC):
             returns = self._get_expected_return(rewards, discount_rate)
 
             # Convert training data to appropriate shape
-            action_prs, values, returns = [
-                tf.expand_dims(i, 1) for i in [action_prs, values, returns]]
+            action_prs, values, returns = [tf.expand_dims(i, axis=1) for i in
+                                           [action_prs, values, returns]]
 
             # Calculating loss values to update our network
             loss = self._compute_loss(action_prs, values, returns)
@@ -178,7 +189,7 @@ class Slimevolley(Algorithm):
         total_reward = 0
 
         for _i in range(self.max_steps):
-            state = tf.expand_dims(state, 0)
+            state = tf.expand_dims(state, axis=0)
 
             action_logits, _value = self.model(state)
             action = tf.argmax(tf.squeeze(action_logits))
@@ -193,7 +204,7 @@ class Slimevolley(Algorithm):
             self.env.render()
             time.sleep(Slimevolley.RENDER_SLEEP_TIME)
 
-            if done:
+            if tf.cast(done, tf.bool):
                 break
 
         return total_reward
@@ -294,7 +305,7 @@ class Mazeworld(Algorithm):
         total_reward = 0
 
         for _i in range(self.max_steps):
-            state = tf.expand_dims(state, 0)
+            state = tf.expand_dims(state, axis=0)
 
             action_logits, _value = self.model(state)
             action = tf.argmax(tf.squeeze(action_logits))

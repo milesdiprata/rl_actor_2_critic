@@ -21,14 +21,9 @@ MODEL_PATH = "models/a2c/{}_model.tf"
 warnings.filterwarnings("ignore", module="tensorflow")
 warnings.filterwarnings("ignore", module="gym")
 
-# np.set_printoptions(threshold=20, precision=4, suppress=True, linewidth=200)
-np.set_printoptions(threshold=np.inf)
-
 
 def main() -> None:
-
     args = a2c.arguments.Arguments()
-    model_path = MODEL_PATH.format(args.gym.name.lower())
 
     env = gym.make(GYM_ENV_NAMES[args.gym])
     env.seed(args.seed)
@@ -49,14 +44,14 @@ def main() -> None:
     else:
         raise ValueError("Unknown gym!")
 
+    results_csv_name = "results/" + args.gym.name.lower() + "_training.csv"
+    model_path = MODEL_PATH.format(args.gym.name.lower())
+
     if args.train:
-        algo.train()
+        algo.train(results_csv_name)
         algo.save_model(model_path)
     else:
         algo.load_model(model_path)
-        for _i in range(args.max_episodes):
-            cumulative_score = algo.render_episode()
-            print("Cumulative Score:", cumulative_score)
 
 
 if __name__ == "__main__":
