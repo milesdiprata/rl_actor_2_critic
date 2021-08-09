@@ -34,7 +34,6 @@ class Arguments:
         self.gym = Arguments.GYMS[args.gym]
         self.train = bool(args.train)
         self.other_policy = Arguments.OTHER_POLICIES[args.other]
-        self.render = bool(args.render)
         self.day = bool(args.day)
         self.seed = int(args.seed)
         self.max_episodes = int(args.episodes)
@@ -48,10 +47,9 @@ class Arguments:
         parser.add_argument("--train", action="store_true", help="Train and save new model?", default=False)
         parser.add_argument("--other", help="Choice of other policy (for slimevolley): baseline, ppo, cma, ga or random.",
                             type=str, default="baseline")
-        parser.add_argument("--render", action="store_true", help="Render to screen?", default=False)
         parser.add_argument("--day", action="store_true", help="Daytime colors?", default=False)
         parser.add_argument("--seed", help="Random seed (integer); default 721.", type=int, default=721)
-        parser.add_argument("--episodes", help="Number of episodes (integer); default 10000).",
+        parser.add_argument("--episodes", help="Number of episodes (integer); default 10000.",
                             type=int, default=10000)
         parser.add_argument(
             "--steps", help="Max. number of steps per episode (integer); default 1000.", type=int, default=1000)
